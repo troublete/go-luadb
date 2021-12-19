@@ -58,7 +58,7 @@ import "C"
 import (
 	"database/sql"
 	"errors"
-	"fmt"
+	"time"
 	"unsafe"
 
 	_ "github.com/lib/pq"
@@ -118,6 +118,10 @@ func go_query(L *C.lua_State, query *C.go_str) C.int {
 	columns, err = rows.Columns()
 	error_handling(L, err)
 
+	var columnTypes []*sql.ColumnType
+	columnTypes, err = rows.ColumnTypes()
+	error_handling(L, err)
+
 	numberColumns := len(columns)
 	i := 1
 
@@ -137,13 +141,64 @@ func go_query(L *C.lua_State, query *C.go_str) C.int {
 		for i := range row {
 			column := C.CString(columns[i])
 			defer C.free(unsafe.Pointer(column))
-
-			value := C.CString(fmt.Sprintf("%v %T", row[i], row[i])) //@todo(troublete): implement correct value mapping (for postgres)
-			defer C.free(unsafe.Pointer(value))
-
 			C.lua_pushstring(L, column)
-			C.lua_pushstring(L, value)
-			C.lua_settable(L, -3)
+
+			C.lua_createtable(L, 0, 0) // column value table
+			ct := C.CString("type")
+			defer C.free(unsafe.Pointer(ct))
+			C.lua_pushstring(L, ct)
+
+			columnType := C.CString(columnTypes[i].DatabaseTypeName())
+			defer C.free(unsafe.Pointer(columnType))
+			C.lua_pushstring(L, columnType)
+
+			C.lua_settable(L, -3) // set type
+
+			v := C.CString("value")
+			defer C.free(unsafe.Pointer(v))
+			C.lua_pushstring(L, v)
+
+			value := row[i]
+			if v, ok := value.(int64); ok == true {
+				C.lua_pushinteger(L, C.longlong(v))
+			}
+
+			if v, ok := value.(float64); ok == true {
+				C.lua_pushnumber(L, C.double(v))
+			}
+
+			if v, ok := value.(string); ok == true {
+				vp := C.CString(v)
+				defer C.free(unsafe.Pointer(vp))
+				C.lua_pushstring(L, vp)
+			}
+
+			if v, ok := value.(time.Time); ok == true {
+				vp := C.CString(v.Format(time.RFC3339))
+				defer C.free(unsafe.Pointer(vp))
+				C.lua_pushstring(L, vp)
+			}
+
+			if v, ok := value.(bool); ok == true {
+				if v == true {
+					C.lua_pushboolean(L, 1)
+				} else {
+					C.lua_pushboolean(L, 0)
+				}
+			}
+
+			if v, ok := value.([]byte); ok == true {
+				C.lua_createtable(L, 0, 0)
+
+				for idx, b := range v {
+					C.lua_pushinteger(L, C.longlong(idx))
+					C.lua_pushinteger(L, C.longlong(b))
+					C.lua_settable(L, -3)
+				}
+			}
+
+			C.lua_settable(L, -3) // set value
+			C.lua_settable(L, -3) // set row
 		}
 		C.lua_settable(L, -3)
 		i = i + 1
@@ -173,8 +228,8 @@ func go_exec(L *C.lua_State, query *C.go_str) C.int {
 	rowsAffected, err = result.RowsAffected()
 	error_handling(L, err)
 
-	C.lua_pushinteger(C.longlong(lastId))
-	C.lua_pushinteger(C.longlong(rowsAffected))
+	C.lua_pushinteger(L, C.longlong(lastId))
+	C.lua_pushinteger(L, C.longlong(rowsAffected))
 	return C.int(2)
 }
 
