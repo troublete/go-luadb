@@ -15,7 +15,7 @@ db.connect_postgres('postgresql://...') -- connect via connection string
 
 ok = db.ping() -- returns ok if ping successful; or throws an error
 rows = db.query('select * from ...') -- runs query and returns rows as table of tables; or throws an error
-lastId, rowsAffected = db.exec('insert into ...') -- executes query, and returns state vars as numbers; or throws an error
+lastId, rowsAffected = db.exec('insert into ...') -- executes query, and returns state vars as integers; or throws an error
 ```
 
 ## Build
@@ -33,10 +33,20 @@ make build
 
 ### PostgreSQL
 
-* Supports mapping most generic types (i.e. numeric types, string types, boolean, ...)
+* Supports mapping for most generic types 
+	* `SMALLINT`, `INT`, `BIGINT` are returned as integer (which correlates to C double double)
+	* `REAL`, `DOUBLE` are returned as number (which correlates to C double)
+	* `CHAR`, `VARCHAR`, `TEXT` are returned as string
+	* `DATE`, `TIME`, `TIMETZ`, `TIMESTAMP`,  `TIMESTAMPTZ` are returned a ISO8601 representing string
+	* `BOOL` is returned as boolean
+	* `BYTEA` is returned as "byte table"
 * Supports mapping of `JSON` and `JSONB` fields to Lua tables
 * Supports mapping of `NUMERIC` and `DECIMAL` to numbers
-* Time information (date, timestamp, ...) are returned as ISO8601 strings
+* All not mapable data is returned as "byte table"
+
+**Todo**
+
+- [ ] `hstore` support
 
 ## Contribute
 
