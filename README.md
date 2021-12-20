@@ -20,7 +20,7 @@ lastId, rowsAffected = db.exec('insert into ...') -- executes query, and returns
 
 ## Build
 
-Assumes ANY Lua version is installed as static lib (`liblua.a`) (which is
+Assumes a Lua version is installed as static lib (`liblua.a`) (which is
 standard at least for Lua 5.4) in `/usr/local/lib/`.
 
 To build run:
