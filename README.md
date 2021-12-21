@@ -44,10 +44,6 @@ make build
 * Supports mapping of `NUMERIC` and `DECIMAL` to numbers
 * All not mapable data is returned as "byte table"
 
-**Todo**
-
-- [ ] `hstore` support
-
 ## Contribute
 
 It would be nice to grow this library to include also support for other
