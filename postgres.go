@@ -59,7 +59,7 @@ func map_postgres_row(L *C.lua_State, col string, value interface{}, columnType 
 			err := json.Unmarshal(v, &data)
 			error_handling(L, err)
 
-			struct_to_table(L, data)
+			go_to_lua(L, data)
 		case columnType.DatabaseTypeName() == "NUMERIC":
 			fallthrough
 		case columnType.DatabaseTypeName() == "DECIMAL":
