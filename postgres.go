@@ -71,7 +71,7 @@ func map_postgres_row(L *C.lua_State, col string, value interface{}, columnType 
 			C.lua_createtable(L, 0, 0)
 
 			for idx, b := range v {
-				C.lua_pushinteger(L, C.longlong(idx))
+				C.lua_pushinteger(L, C.longlong(int64(idx+1)))
 				C.lua_pushinteger(L, C.longlong(b))
 				C.lua_settable(L, -3)
 			}
